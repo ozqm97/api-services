@@ -124,7 +124,7 @@ Route::prefix('crm')->group(function () {
     Route::post('/ReservasPagadas', [PostHoteles::class, 'postAllReserv']);
     Route::middleware('auth:sanctum')->get('/ReservasOperador', [PostHoteles::class, 'postReservOperador']);
     Route::post('/ReservasConfirmadas', [PostHoteles::class, 'postAllConfir']);
-    Route::post('/ObtenerReserva', [PostHoteles::class, 'postReserva']);
+    Route::middleware('auth:sanctum')->post('/ObtenerReserva', [PostHoteles::class, 'postReserva']);
     Route::post('/ConsultarReserva', [PostHoteles::class, 'postConsultReserva']);
     Route::post('/ConfirmarReserva', [PostHoteles::class, 'postConfi']);
     Route::post('/InsertConfir', [PostHoteles::class, 'postInsert']);

@@ -94,48 +94,35 @@ class PostHoteles extends ApiController
     }
     public function postReserva(Request $request)
     {
-        $response = null;
-        $status   = 200;
-
         try {
             $validateData = $request->validate([
-                'Clave' => 'required',
+                'clave' => 'required',
             ]);
 
-            $num_Reserva = $validateData['Clave'];
+            $num_Reserva = $validateData['clave'];
 
             $reservaciones = bookings::with(['plataforma', 'huesped', 'pagos'])
                 ->where('CVE_RESERVACION', '=', $num_Reserva)
                 ->get();
 
             if ($reservaciones->isEmpty()) {
-                $response = [
-                    'message' => 'No se encontró ninguna reservación con la clave proporcionada',
-                    'success' => false,
-                ];
-                $status = 404;
+                return $this->errorResponse("No se encontró ninguna reservación con la clave proporcionada", 'No hay resultados', 400);
             } else {
                 $existeEnDesgloses = breakdownHotels::where('CVE_RESERVACION', '=', $num_Reserva)->exists();
 
                 if ($existeEnDesgloses) {
-                    $response = [
-                        'message' => 'La reservación ya existe en la tabla de desgloses',
-                        'success' => false,
-                    ];
-                    $status = 409;
+                    return $this->errorResponse("Error Dupliado", ['La reserva ya existe en la tabla', 400]);
                 } else {
                     $response = $reservaciones;
                 }
             }
         } catch (ValidationException $e) {
-            $response = ['error' => $e->getMessage()];
-            $status = 422;
+            return $this->errorResponse("Error ValidationException", $e->getMessage(), 400);
         } catch (\Exception $e) {
-            $response = ['error' => 'Error al consultar los datos: ' . $e->getMessage()];
-            $status = 500;
+            return $this->errorResponse("Error Exception", $e->getMessage(), 400);
         }
 
-        return response()->json($response, $status);
+        return $this->successResponse("Resultados ok", $response);
     }
 
 
