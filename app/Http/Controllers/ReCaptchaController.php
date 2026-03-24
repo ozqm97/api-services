@@ -24,8 +24,8 @@ class ReCaptchaController extends Controller
         ]);
 
         $data = $response->json();
-        if ($data['success']) {
-            $score = $data['score'];
+        if (($data['success'] ?? false) === true) {
+            $score = $data['score'] ?? 0;
 
             if ($score >= 0.8) {
                 return response()->json(['success' => true, 'score' => $score, 'status' => 'ok']);
@@ -36,7 +36,11 @@ class ReCaptchaController extends Controller
             }
         }
 
-        return response()->json(['success' => false, 'score' => $data['score'], 'status' => 'error']);
+        return response()->json([
+            'success' => false,
+            'score' => $data['score'] ?? 0,
+            'status' => 'error',
+        ], 400);
     }
 
 
@@ -51,7 +55,7 @@ class ReCaptchaController extends Controller
             'secret' => env('RECAPTCHA_SECRET_V2_KEY'),
             'response' => $tokenV2,
         ])->json();
-        if (!$response['success']) {
+        if (($response['success'] ?? false) !== true) {
             return response()->json(['success' => false], 400);
         }
 

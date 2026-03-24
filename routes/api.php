@@ -37,8 +37,8 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 
 ///////////////PETICIONES PARA RECPATCHA V2 Y V3///////////////////////
 Route::prefix('recaptcha')->group(function () {
-    Route::post('validate-recaptcha-v2', [ReCaptchaController::class, 'validateToken2'])->name('api.recaptcha.v2');
-    Route::post('validate-recaptcha', [ReCaptchaController::class, 'validateToken'])->name('api.recaptcha.v3');
+    Route::match(['get', 'post'], 'validate-recaptcha-v2', [ReCaptchaController::class, 'validateToken2'])->name('api.recaptcha.v2');
+    Route::match(['get', 'post'], 'validate-recaptcha', [ReCaptchaController::class, 'validateToken'])->name('api.recaptcha.v3');
 });
 
 Route::prefix('login')->group(function () {
