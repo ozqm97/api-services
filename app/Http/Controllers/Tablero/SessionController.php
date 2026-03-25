@@ -6,7 +6,9 @@ use App\Events\NotifyReservas;
 use App\Http\Controllers\ApiController;
 use App\Models\tablero\Contravel_user;
 use App\Traits\TokenManage;
+
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Spatie\FlareClient\Api;
 
@@ -16,13 +18,17 @@ class SessionController extends ApiController
 
     public function getDataUser(Request $request)
     {
-        $user = $request->user();
-        Log::debug('Usuario obtenido del token: ' . json_encode($user));
+        return $this->successResponse('Usuario obtenido correctamente', $request->user());
+    }
 
-        if ($user) {
-            return $this->successResponse('Usuario obtenido correctamente', $user);
-        } else {
-            return $this->errorResponse('Token inválido', 'No se pudo obtener el usuario', 401);
-        }
+    public function logout(Request $request)
+    {
+        Auth::guard('web')->logout();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        $request->session()->regenerate();
+
+        return $this->successResponse("Logout exitoso", ['success' => true]);
     }
 }
