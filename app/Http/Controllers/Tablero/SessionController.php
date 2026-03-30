@@ -9,6 +9,7 @@ use App\Traits\TokenManage;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Log;
 use Spatie\FlareClient\Api;
 
@@ -23,12 +24,27 @@ class SessionController extends ApiController
 
     public function logout(Request $request)
     {
+        // 1. Limpieza en el Servidor
         Auth::guard('web')->logout();
-
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        $request->session()->regenerate();
 
-        return $this->successResponse("Logout exitoso", ['success' => true]);
+        // 2. Crear las instrucciones de borrado para el Navegador
+        // Al usar config(), Laravel tomará el valor 'null' que pusimos en el .env
+        $cookieSession = Cookie::forget(
+            'laravel_session',
+            config('session.cookie'),
+            config('session.path'),
+            config('session.domain')
+        );
+
+        $cookieXsrf = Cookie::forget(
+            'XSRF-TOKEN',
+            config('session.path'),
+            config('session.domain')
+        );
+
+
+        return $this->successResponse("Logout exitoso", ['success' => true])->withCookie($cookieSession)->withCookie($cookieXsrf);
     }
 }
