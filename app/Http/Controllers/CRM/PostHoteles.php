@@ -20,6 +20,7 @@ use App\Models\HotelesDB\HotelesReservados;
 use App\Models\HotelesDB\Reservacion;
 use Carbon\Carbon;
 use Dom\Comment;
+use GrahamCampbell\ResultType\Success;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -388,6 +389,18 @@ class PostHoteles extends ApiController
             return response()->json(['error' => $e->getMessage()], 422);
         }
     }
+
+    public function testBroadcast (Request $request){
+                $user = $request->user()->user;
+                Log::debug("USER => ". $user);
+                // 🔥 AQUÍ disparas el evento con los datos
+        broadcast(new NotifyReservas([
+            'status' => true
+        ], $user));
+
+        return $this->successResponse("change", true);
+
+    }
     public function postReservOperador(Request $request)
     {
         $user = $request->user()->user;
@@ -402,11 +415,11 @@ class PostHoteles extends ApiController
             ->get();
 
         // 🔥 AQUÍ disparas el evento con los datos
-        broadcast(new NotifyReservas([
-            'reservaciones' => $reservaciones
-        ], $user));
+        //broadcast(new NotifyReservas([
+          //  'reservaciones' => $reservaciones
+        //], $user));
 
-        return response()->json(['ok' => true]);
+        return $this->successResponse("Reservations Notify Ok", $reservaciones);
     }
 
     public function agregarProveedor(Request $request)

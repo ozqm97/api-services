@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CRM\PostHoteles;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\Operadora\SesionController;
 use App\Http\Controllers\Tablero\SessionController;
@@ -17,4 +18,6 @@ Route::prefix('login')->group(function () {
     Route::middleware('auth:sanctum')->get('getUserInfo', [SessionController::class, 'getDataUser'])->name('api.contravel.user');
     Route::middleware('auth:sanctum')->post('logout', [SessionController::class, 'logout'])->name('api.contravel.user');
     Route::get('getDataUser', [SesionController::class, 'getDataUser'])->middleware('check.bearer')->name('api.contravel.user');
+    Route::middleware('auth:sanctum')->get('/getNotify', [PostHoteles::class, 'postReservOperador']);
+    Route::middleware('auth:sanctum')->get('/testBroad', [PostHoteles::class, 'testBroadcast']);
 });
