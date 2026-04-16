@@ -19,7 +19,24 @@ class SessionController extends ApiController
 
     public function getDataUser(Request $request)
     {
-        return $this->successResponse('Usuario obtenido correctamente', $request->user());
+        $user = $request->user();
+
+        if (!$user) {
+            return $this->errorResponse('Unauthenticated', 'No hay sesión', 401);
+        }
+
+        // 🔥 cargar permisos
+        $permissions = $user->getFullPermissionTree();
+
+        return $this->successResponse('Usuario obtenido correctamente', [
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->full_name,
+                'agency' => $user->cve_agencia,
+                'mail' => $user->mail
+            ],
+            'permissions' => $permissions
+        ]);
     }
 
     public function logout(Request $request)

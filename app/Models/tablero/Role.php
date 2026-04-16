@@ -2,8 +2,6 @@
 
 namespace App\Models\tablero;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class Role extends Authenticatable
@@ -16,5 +14,35 @@ class Role extends Authenticatable
         'description',
     ];
     public $timestamps = false;
+
+        // Usuarios
+    public function users()
+    {
+        return $this->belongsToMany(
+            Contravel_user::class,
+            'user_roles',
+            'role_id',
+            'user_id'
+        );
+    }
+
+    // Permisos
+    public function rolePermissions()
+    {
+        return $this->hasMany(RolePermission::class, 'role_id');
+    }
+
+    // 🔥 BONUS: obtener permisos con relaciones
+    public function permissions()
+    {
+        return $this->hasManyThrough(
+            Permission::class,
+            RolePermission::class,
+            'role_id',
+            'id',
+            'id',
+            'permission_id'
+        );
+    }
 
 }

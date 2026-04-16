@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\tablero;
 
 use App\Models\tablero\Area;
 use App\Models\tablero\Module;
 use App\Models\tablero\Permission;
 use App\Models\tablero\Role;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class RolePermission extends Model
+class RolePermission extends Authenticatable
 {
     protected $table = 'role_permissions';
 

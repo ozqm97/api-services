@@ -103,7 +103,6 @@ class LoginController extends ApiController
             $hash = hash_hmac('sha256', $cifrado, $key);
 
             DB::beginTransaction();
-            Log::debug("Intentando actualizar o crear usuario con ID: " . $data['id']);
             $user = Contravel_user::updateOrCreate(
                 ['id' => $data['id']],
                 [
@@ -115,13 +114,9 @@ class LoginController extends ApiController
                 ]
             );
 
-            Users_permiso::firstOrCreate([
-                'user' => $data['id'],
-                'permiso' => 3,
-            ]);
-
             Auth::login($user);
             $request->session()->regenerate();
+
             $jwt = $this->generateToken($user->id, $user->user, $data['token']);
             if (!$jwt->status) {
                 DB::rollBack();
@@ -129,7 +124,7 @@ class LoginController extends ApiController
             }
 
             DB::commit();
-            return $this->successResponse('Sesión iniciada correctamente',  $jwt->token);
+            return $this->successResponse('Sesión iniciada correctamente',  $user);
         } catch (QueryException $e) {
             DB::rollBack();
             return $this->errorResponse("Sesión Error",  'No se pudo almacenar la información: ' . $e->getMessage(), 500);

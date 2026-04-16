@@ -3,9 +3,9 @@
 namespace App\Models\tablero;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class Users_permiso extends Model
+class Users_permiso extends Authenticatable
 {
     protected $table = 'users_permisos';
     protected $primaryKey = 'id';
