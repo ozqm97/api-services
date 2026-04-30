@@ -4,23 +4,13 @@ namespace App\Http\Controllers\CRM;
 
 use App\Events\NotifyReservas;
 use App\Http\Controllers\ApiController;
-use App\Http\Controllers\Controller;
-use App\Http\Controllers\LoginController;
+
 use App\Models\admon_op\breakdownHotels;
 use App\Models\admon_op\catalogSupplierHotels;
 use App\Models\admon_op\commentReservations;
 use App\Models\admon_op\confirmedReservations;
 use App\Models\hoteles\bookings;
 use App\Models\hoteles\cancelledBooking;
-use App\Models\HotelesDB\Canceladas;
-use App\Models\HotelesDB\Confirmadas;
-use App\Models\HotelesDB\Observaciones;
-use App\Models\HotelesDB\Proveedores;
-use App\Models\HotelesDB\HotelesReservados;
-use App\Models\HotelesDB\Reservacion;
-use Carbon\Carbon;
-use Dom\Comment;
-use GrahamCampbell\ResultType\Success;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -28,71 +18,7 @@ use Illuminate\Validation\ValidationException;
 
 class PostHoteles extends ApiController
 {
-    public function postConsult(Request $request)
-    {
-        Log::info('ConsultReser: inicio del método', [
-            'request' => $request->all()
-        ]);
 
-        try {
-
-            Log::info('ConsultReser: validando request');
-
-            $validateData = $request->validate([
-                'Clave' => 'required|string',
-            ]);
-
-            Log::info('ConsultReser: request validado', [
-                'Clave' => $validateData['Clave']
-            ]);
-
-            $num_Reserva = $validateData['Clave'];
-
-            Log::info('ConsultReser: ejecutando consulta', [
-                'busqueda' => $num_Reserva
-            ]);
-
-            $reservaciones = bookings::with([
-                'canceladas',
-                'confirmadas',
-                'observaciones'
-            ])
-                ->where('CVE_RESERVACION', 'LIKE', "%{$num_Reserva}%")
-                ->get();
-
-            Log::info('ConsultReser: consulta ejecutada', [
-                'resultados' => $reservaciones->count()
-            ]);
-
-            if ($reservaciones->isEmpty()) {
-
-                Log::warning('ConsultReser: no se encontraron resultados', [
-                    'clave' => $num_Reserva
-                ]);
-
-                return response()->json([
-                    'message' => 'No se encontró ninguna reservación similar'
-                ], 404);
-            }
-
-            Log::info('ConsultReser: respuesta enviada correctamente');
-
-            return response()->json($reservaciones, 200);
-        } catch (\Throwable $e) {
-
-            Log::error('ConsultReser: error detectado', [
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return response()->json([
-                'error' => true,
-                'message' => 'Error interno del servidor'
-            ], 500);
-        }
-    }
     public function postReserva(Request $request)
     {
         try {
@@ -333,32 +259,66 @@ class PostHoteles extends ApiController
     }
 
 
-    public function postConsultReserva(Request $request)
+    public function postConsult(Request $request)
     {
+        Log::info('ConsultReser: inicio del método', [
+            'request' => $request->all()
+        ]);
+
         try {
-            // Validar los campos requeridos
+            // Validar request
             $validateData = $request->validate([
-                'fechaInicio' => 'required',
-                'fechaFin'    => 'required',
+                'Clave' => 'required|string',
             ]);
 
-            $fechaInicio = $validateData['fechaInicio'];
-            $fechaFin    = $validateData['fechaFin'];
+            $numReserva = $validateData['Clave'];
 
-            // Subconsulta para obtener las reservaciones confirmadas
-            $reservacionesConfirmadas = confirmedReservations::select('CVE_RESERVACION')->get();
+            Log::info('ConsultReser: buscando reservación', [
+                'Clave' => $numReserva
+            ]);
 
-            // Consulta la tabla principal para obtener solo las reservaciones confirmadas
-            $reservaciones = bookings::with(['plataforma', 'huesped', 'pagos', 'confirmadas'])
-                ->whereBetween('FCH_RESERVACION', [$fechaInicio, $fechaFin])
-                ->where('STATUS_RESERVA', 'PAID')
-                ->whereIn('CVE_RESERVACION', $reservacionesConfirmadas->pluck('CVE_RESERVACION')) // Incluir solo las confirmadas
-                ->orderBy('FCH_CHECKIN', 'asc')
+            // Buscar reservación con todas sus relaciones
+            $reservaciones = bookings::with([
+                'plataforma',
+                'huesped',
+                'pagos',
+                'canceladas',
+                'confirmadas',
+                'observaciones'
+            ])
+                ->where('CVE_RESERVACION', 'LIKE', "%{$numReserva}%")
                 ->get();
 
-            return response()->json($reservaciones);
-        } catch (ValidationException $e) {
-            return response()->json(['error' => $e->getMessage()], 422);
+            if ($reservaciones->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se encontró ninguna reservación similar'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Reservación encontrada correctamente',
+                'data' => $reservaciones
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Throwable $e) {
+            Log::error('ConsultReser: error detectado', [
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error interno del servidor',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
     public function postAllReserv(Request $request)
@@ -390,16 +350,16 @@ class PostHoteles extends ApiController
         }
     }
 
-    public function testBroadcast (Request $request){
-                $user = $request->user()->user;
-                Log::debug("USER => ". $user);
-                // 🔥 AQUÍ disparas el evento con los datos
+    public function testBroadcast(Request $request)
+    {
+        $user = $request->user()->user;
+        Log::debug("USER => " . $user);
+        // 🔥 AQUÍ disparas el evento con los datos
         broadcast(new NotifyReservas([
             'status' => true
         ], $user));
 
         return $this->successResponse("change", true);
-
     }
     public function postReservOperador(Request $request)
     {
@@ -412,12 +372,16 @@ class PostHoteles extends ApiController
             ->whereBetween('FCH_RESERVACION', [$fechaInicio, $fechaFin])
             ->where('STATUS_RESERVA', 'PAID')
             ->where('CVE_USUARIO', $user)
+            ->where(function ($query) {
+                $query->whereNull('BREAKDOWN_STATUS')
+                    ->orWhere('BREAKDOWN_STATUS', '!=', 1);
+            })
             ->get();
 
         // 🔥 AQUÍ disparas el evento con los datos
-        //broadcast(new NotifyReservas([
-          //  'reservaciones' => $reservaciones
-        //], $user));
+        // broadcast(new NotifyReservas([
+        //     'reservaciones' => $reservaciones
+        // ], $user));
 
         return $this->successResponse("Reservations Notify Ok", $reservaciones);
     }
@@ -450,7 +414,7 @@ class PostHoteles extends ApiController
 
     public function createDesglose(Request $request)
     {
-        // Validar los datos de entrada (sin requerir que sean obligatorios)
+        // Validar los datos de entrada
         $request->validate([
             'agencia'     => 'nullable',
             'checkin'     => 'nullable',
@@ -486,16 +450,21 @@ class PostHoteles extends ApiController
             'servicio'    => 'nullable',
         ]);
 
-        // Asignar los valores del request a variables locales
-        $fecha    = $request->fecha;
-        $checkin  = $request->checkin;
-        $checkout = $request->checkout;
-        $fchpago  = $request->fchpago;
+        // Variables locales
+        $fecha       = $request->fecha;
+        $checkin     = $request->checkin;
+        $checkout    = $request->checkout;
+        $fchpago     = $request->fchpago;
+        $localizador = $request->localizador; // CVE_RESERVACION
 
         try {
-            // Crear el registro
+            /**
+             * =========================================================
+             * 1. INSERTAR DESGLOSE EN in_desgloses
+             * =========================================================
+             */
             $insertData = breakdownHotels::create([
-                'CVE_RESERVACION'    => $request->localizador,
+                'CVE_RESERVACION'    => $localizador,
                 'USER'               => $request->operador,
                 'proveedor'          => $request->proveedor,
                 'CXS'                => $request->cxs,
@@ -507,7 +476,7 @@ class PostHoteles extends ApiController
                 'FCH_PAGO'           => $fchpago,
                 'NOMBRE_HOTEL'       => $request->hotel,
                 'TITULAR'            => $request->titular,
-                'OBSERVACIONES'      => $request->obs ?? 'No hay observaciones', // Establecer valor por defecto si está vacío
+                'OBSERVACIONES'      => $request->obs ?? 'No hay observaciones',
                 'TOTAL'              => $request->total,
                 'CURRENCY'           => $request->currency,
                 'neto_proveedor'     => $request->netop,
@@ -529,9 +498,31 @@ class PostHoteles extends ApiController
                 'servicio'           => $request->servicio,
             ]);
 
-            return response()->json(['Estatus' => 'true', 'message' => 'Datos insertados correctamente', 'data' => $insertData], 201);
+            /**
+             * =========================================================
+             * 2. ACTUALIZAR BREAKDOWN_STATUS = 1 EN hts_reservaciones
+             * =========================================================
+             */
+            bookings::where('CVE_RESERVACION', $localizador)
+                ->update([
+                    'BREAKDOWN_STATUS' => 1
+                ]);
+
+            /**
+             * =========================================================
+             * 3. RESPUESTA OK
+             * =========================================================
+             */
+            return response()->json([
+                'Estatus' => 'true',
+                'message' => 'Datos insertados correctamente y BREAKDOWN_STATUS actualizado',
+                'data'    => $insertData
+            ], 201);
         } catch (\Exception $e) {
-            return response()->json(['Estatus' => 'false', 'message' => 'Error al insertar los datos: ' . $e->getMessage()], 400);
+            return response()->json([
+                'Estatus' => 'false',
+                'message' => 'Error al insertar los datos: ' . $e->getMessage()
+            ], 400);
         }
     }
 
