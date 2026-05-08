@@ -7,8 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class cancelledBooking extends Model
 {
-    protected $connection = 'mysql_hoteles'; // Especifica la conexión
-    protected $table = 'pltfrm_reservas_canceladas';
+    protected $connection = 'mysql_admon_op';
+    protected $table = 'post_reservas_canceladas';
     protected $primaryKey = 'CVE_RESERVACION';
     public $timestamps = false; // Desactivar timestamps
     public $incrementing = false; // Si tu clave primaria no es autoincrementable

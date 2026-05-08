@@ -13,7 +13,6 @@ class confirmedReservations extends Model
     // Permitir la asignación masiva para estos campos
     protected $fillable = [
         'NOM_OPERADOR',
-        'OBSERVACIONES',
         'CVE_RESERVACION',
         'CVE_USER'
     ];

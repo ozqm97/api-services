@@ -56,45 +56,43 @@ class PostHoteles extends ApiController
     public function postOBS(Request $request)
     {
         try {
-            // Validar los campos requeridos
             $validateData = $request->validate([
-                'ClaveReserva' => 'required',
-                'Obs'          => 'required',
+                'ClaveReserva'    => 'required',
+                'Obs'             => 'required',
+                'NombreOperador'  => 'nullable|string',
             ]);
 
-            // Extraer los datos validados
-            $claveReserva = $validateData['ClaveReserva'];
-            $obs          = $validateData['Obs'];
+            $claveReserva   = $validateData['ClaveReserva'];
+            $obs            = $validateData['Obs'];
+            $nombreOperador = $validateData['NombreOperador'] ?? null;
 
-            // Verificar si ya existe una reserva con la clave proporcionada
             $observacion = commentReservations::where('CVE_RESERVACION', $claveReserva)->first();
 
             if ($observacion) {
-                // Si la reserva ya existe, actualiza la observación
                 $observacion->OBSERVACIONES = $obs;
+                $observacion->NOM_OPERADOR  = $nombreOperador;
                 $observacion->save();
+
                 $message = 'Observación actualizada correctamente';
             } else {
-                // Si no existe, crea una nueva reserva con observaciones
                 $observacion = commentReservations::create([
                     'CVE_RESERVACION' => $claveReserva,
                     'OBSERVACIONES'   => $obs,
+                    'NOM_OPERADOR'    => $nombreOperador,
                 ]);
+
                 $message = 'Observación creada correctamente';
             }
 
-            // Retornar el éxito con los datos insertados o actualizados
             return response()->json([
                 'message' => $message,
                 'data'    => $observacion,
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
-            // Manejar errores de validación
             return response()->json([
                 'error' => $e->validator->errors(),
             ], 422);
         } catch (\Exception $e) {
-            // Manejar errores generales
             return response()->json([
                 'error' => 'Error al insertar o actualizar los datos: ' . $e->getMessage(),
             ], 500);
