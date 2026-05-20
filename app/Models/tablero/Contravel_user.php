@@ -10,6 +10,7 @@ class Contravel_user extends Authenticatable
     protected $table = 'contravel_users';
 
     protected $fillable = [
+        'id',
         'user',
         'cifrado',
         'mail',
@@ -20,6 +21,10 @@ class Contravel_user extends Authenticatable
     public $timestamps = false;
 
     protected $primaryKey = 'id';
+
+    public $incrementing = false;
+
+    protected $keyType = 'integer';
 
     // 🔗 Relación con agencia
     public function agency()

@@ -104,8 +104,9 @@ class LoginController extends ApiController
 
             DB::beginTransaction();
             $user = Contravel_user::updateOrCreate(
-                ['id' => $data['id']],
+                ['id' => (int) $data['id']],
                 [
+                    'id' => (int) $data['id'],
                     'user' => $request->input('user'),
                     'cifrado' => $hash,
                     'mail' => $data['mail'],
@@ -127,7 +128,14 @@ class LoginController extends ApiController
             return $this->successResponse('Sesión iniciada correctamente',  $user);
         } catch (QueryException $e) {
             DB::rollBack();
-            return $this->errorResponse("Sesión Error",  'No se pudo almacenar la información: ' . $e->getMessage(), 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'SQL ERROR',
+                'sql_message' => $e->getMessage(),
+                'sql_state' => $e->errorInfo[0] ?? null,
+                'driver_code' => $e->errorInfo[1] ?? null,
+                'driver_message' => $e->errorInfo[2] ?? null,
+            ], 500);
         } catch (\Exception $e) {
             DB::rollBack();
             return $this->errorResponse("Sesión Error", 'Error general: ' . $e->getMessage(), 500);
@@ -185,7 +193,14 @@ class LoginController extends ApiController
             return $this->successResponse('Sesión iniciada correctamente',  $jwt->token);
         } catch (QueryException $e) {
             DB::rollBack();
-            return $this->errorResponse("Sesión Error", 'No se pudo almacenar la información: ' . $e->getMessage(), 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'SQL ERROR',
+                'sql_message' => $e->getMessage(),
+                'sql_state' => $e->errorInfo[0] ?? null,
+                'driver_code' => $e->errorInfo[1] ?? null,
+                'driver_message' => $e->errorInfo[2] ?? null,
+            ], 500);
         } catch (\Exception $e) {
             DB::rollBack();
             return $this->errorResponse("Sesión Error", 'Error general: ' . $e->getMessage(), 500);
